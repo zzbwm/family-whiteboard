@@ -54,6 +54,7 @@ body {
 }
 #boardInner {
   width: 2500px; height: 2500px; position: relative;
+  transform-origin: 0 0;
 }
 #board.drawing-mode { cursor: crosshair; }
 #board.drawing-mode .board-item { pointer-events: none; }
@@ -493,8 +494,8 @@ function toggleDrawMode() {
   document.getElementById('btnDraw').classList.toggle('active', drawingMode);
   if (!drawingMode) finishStroke();
 }
-function startStroke(e) { if (!drawingMode) return; isDrawing = true; var r = canvas.getBoundingClientRect(); lastX = e.clientX - r.left + board.scrollLeft; lastY = e.clientY - r.top + board.scrollTop; }
-function continueStroke(e) { if (!isDrawing || !drawingMode) return; var r = canvas.getBoundingClientRect(), x = e.clientX - r.left + board.scrollLeft, y = e.clientY - r.top + board.scrollTop; ctx.lineWidth = isErasing ? brushSize*3 : brushSize; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = isErasing ? '#fdfaf6' : drawColor; ctx.globalCompositeOperation = isErasing ? 'destination-out' : 'source-over'; ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke(); lastX = x; lastY = y; }
+function startStroke(e) { if (!drawingMode) return; isDrawing = true; var r = canvas.getBoundingClientRect(); lastX = (e.clientX - r.left) / boardZoom + board.scrollLeft / boardZoom; lastY = (e.clientY - r.top) / boardZoom + board.scrollTop / boardZoom; }
+function continueStroke(e) { if (!isDrawing || !drawingMode) return; var r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / boardZoom + board.scrollLeft / boardZoom, y = (e.clientY - r.top) / boardZoom + board.scrollTop / boardZoom; ctx.lineWidth = isErasing ? brushSize*3 : brushSize; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = isErasing ? '#fdfaf6' : drawColor; ctx.globalCompositeOperation = isErasing ? 'destination-out' : 'source-over'; ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke(); lastX = x; lastY = y; }
 function finishStroke() { if (isDrawing) { isDrawing = false; ctx.globalCompositeOperation = 'source-over'; saveDrawings(); } }
 function redrawCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawings.forEach(function(d) { var img = new Image(); img.onload = function() { ctx.drawImage(img, 0, 0); }; img.src = d; }); }
 
@@ -809,9 +810,48 @@ document.querySelectorAll('.modal-overlay').forEach(function(o) { o.onclick=func
 
 // Canvas
 canvas.addEventListener('mousedown', startStroke); canvas.addEventListener('mousemove', continueStroke); canvas.addEventListener('mouseup', finishStroke); canvas.addEventListener('mouseleave', finishStroke);
-canvas.addEventListener('touchstart', function(e) { if (!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(); lastX=e.touches[0].clientX-r.left + board.scrollLeft; lastY=e.touches[0].clientY-r.top + board.scrollTop; isDrawing=true; }, {passive:false});
-canvas.addEventListener('touchmove', function(e) { if (!isDrawing||!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(), x=e.touches[0].clientX-r.left + board.scrollLeft, y=e.touches[0].clientY-r.top + board.scrollTop; ctx.lineWidth=isErasing?brushSize*3:brushSize; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=isErasing?'#fdfaf6':drawColor; ctx.globalCompositeOperation=isErasing?'destination-out':'source-over'; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; }, {passive:false});
+canvas.addEventListener('touchstart', function(e) { if (!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(); lastX=(e.touches[0].clientX-r.left)/boardZoom + board.scrollLeft/boardZoom; lastY=(e.touches[0].clientY-r.top)/boardZoom + board.scrollTop/boardZoom; isDrawing=true; }, {passive:false});
+canvas.addEventListener('touchmove', function(e) { if (!isDrawing||!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(), x=(e.touches[0].clientX-r.left)/boardZoom + board.scrollLeft/boardZoom, y=(e.touches[0].clientY-r.top)/boardZoom + board.scrollTop/boardZoom; ctx.lineWidth=isErasing?brushSize*3:brushSize; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=isErasing?'#fdfaf6':drawColor; ctx.globalCompositeOperation=isErasing?'destination-out':'source-over'; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; }, {passive:false});
 canvas.addEventListener('touchend', finishStroke); canvas.addEventListener('touchcancel', finishStroke);
+
+// ═══ Board-level pinch-to-zoom (empty area) ═══
+var boardZoom = 1, bPinch = false, bDist0, bZoom0, bCx, bCy;
+function bd(a, b) { var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY; return Math.sqrt(dx*dx + dy*dy); }
+
+board.addEventListener('touchstart', function(e) {
+  if (drawingMode) return;
+  if (e.target.closest('.board-item')) return;
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    bPinch = true;
+    bDist0 = bd(e.touches[0], e.touches[1]);
+    bZoom0 = boardZoom;
+    bCx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    bCy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+  }
+}, { passive: false });
+
+board.addEventListener('touchmove', function(e) {
+  if (!bPinch) return;
+  if (e.touches.length < 2) { bPinch = false; return; }
+  e.preventDefault();
+  var d = bd(e.touches[0], e.touches[1]);
+  var z = Math.max(0.5, Math.min(3, bZoom0 * (d / bDist0)));
+  var cx2 = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+  var cy2 = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+  // Keep pinch center stable
+  var sx = board.scrollLeft + bCx, sy = board.scrollTop + bCy;
+  boardZoom = z;
+  boardInner.style.transform = 'scale(' + z + ')';
+  board.scrollLeft = sx * (z / bZoom0) - bCx;
+  board.scrollTop = sy * (z / bZoom0) - bCy;
+  bZoom0 = z; bCx = cx2; bCy = cy2;
+}, { passive: false });
+
+board.addEventListener('touchend', function(e) {
+  if (bPinch && e.touches.length < 2) { bPinch = false; }
+});
+board.addEventListener('touchcancel', function() { bPinch = false; });
 
 function escapeHtml(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
