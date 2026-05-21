@@ -50,7 +50,7 @@ body {
 #board {
   position: relative; flex: 1;
   background: #fdfaf6; background-image: radial-gradient(circle, #e8dcc8 1px, transparent 1px);
-  background-size: 28px 28px; overflow: hidden; cursor: default;
+  background-size: 28px 28px; overflow: visible; cursor: default;
 }
 #board.drawing-mode { cursor: crosshair; }
 #board.drawing-mode .board-item { pointer-events: none; }
@@ -80,8 +80,8 @@ body {
 .board-item.selected { outline: 3px dashed #5b4a3f; outline-offset: 4px; }
 
 .text-note {
-  background: #fffaec; border: 1px solid #e8d5a3; padding: 14px 16px 24px;
-  min-width: 150px; max-width: 320px; font-size: 15px; line-height: 1.6; color: #3e3028;
+  background: #fffaec; border: 1px solid #e8d5a3; padding: 8px 10px 18px;
+  min-width: 100px; max-width: 130px; font-size: 12px; line-height: 1.4; color: #3e3028;
   white-space: pre-wrap; word-break: break-word;
 }
 .text-note .note-content { max-height: 180px; overflow: hidden; mask-image: linear-gradient(to bottom, black 60%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%); }
@@ -92,7 +92,7 @@ body {
 
 .image-card { background: #111; border: none; border-radius: 8px; overflow: hidden; }
 .image-card .img-wrap { position: relative; border-radius: 0; overflow: hidden; line-height: 0; }
-.image-card .img-wrap img { display: block; max-width: 480px; max-height: 400px; border-radius: 0; pointer-events: none; }
+.image-card .img-wrap img { display: block; max-width: 130px; max-height: 130px; border-radius: 0; pointer-events: none; }
 .image-card .img-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; transition: background 0.2s; border-radius: 0; }
 .image-card .img-overlay:hover { background: rgba(0,0,0,0.25); }
 .image-card .img-overlay .zoom-icon { color: #fff; font-size: 32px; opacity: 0; transition: opacity 0.2s; text-shadow: 0 2px 6px rgba(0,0,0,0.4); }
@@ -100,16 +100,16 @@ body {
 
 .media-card { background: #222; border: none; border-radius: 8px; overflow: hidden; }
 .media-card .media-wrap { position: relative; border-radius: 0; overflow: hidden; line-height: 0; }
-.media-card .media-wrap iframe, .media-card .media-wrap video { display: block; border: none; border-radius: 0; pointer-events: none; max-width: 560px; max-height: 400px; width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; }
+.media-card .media-wrap iframe, .media-card .media-wrap video { display: block; border: none; border-radius: 0; pointer-events: none; max-width: 150px; max-height: 100px; width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; }
 .media-card .media-wrap audio { display: block; width: 100%; min-width: 300px; pointer-events: none; }
 .media-card .media-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 0; z-index: 2; background: rgba(0,0,0,0.12); transition: background 0.2s; }
 .media-card .media-overlay:hover { background: rgba(0,0,0,0.32); }
-.media-card .media-overlay .play-icon { color: #fff; font-size: 48px; text-shadow: 0 2px 12px rgba(0,0,0,0.6); transition: transform 0.2s; opacity: 0.85; }
+.media-card .media-overlay .play-icon { color: #fff; font-size: 28px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); transition: transform 0.2s; opacity: 0.85; }
 .media-card .media-overlay:hover .play-icon { transform: scale(1.15); opacity: 1; }
 .media-card.playing .media-overlay { background: rgba(0,0,0,0.02); }
 .media-card.playing .media-overlay:hover { background: rgba(0,0,0,0.14); }
 
-.media-author-badge { position: absolute; top: 8px; left: 8px; z-index: 3; padding: 5px 12px; border-radius: 6px; font-size: 15px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); box-shadow: 0 2px 6px rgba(0,0,0,0.3); letter-spacing: 0.5px; pointer-events: none; }
+.media-author-badge { position: absolute; top: 4px; left: 4px; z-index: 3; padding: 3px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: 0 1px 4px rgba(0,0,0,0.3); pointer-events: none; }
 
 .media-timeline { display: flex; align-items: center; gap: 6px; padding: 3px 6px 1px; background: #f9f9f9; border-radius: 0 0 4px 4px; cursor: default; }
 .media-timeline .tl-time { font-size: 10px; color: #888; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
@@ -120,10 +120,10 @@ body {
 .media-timeline .tl-track:hover .tl-thumb { opacity: 1; }
 
 .media-card.audio-card { background: #faf7f2; }
-.media-card.audio-card .media-wrap { padding: 24px 20px 16px; text-align: center; background: #faf7f2; border-radius: 0; min-width: 300px; min-height: 100px; position: relative; }
+.media-card.audio-card .media-wrap { padding: 16px 14px 10px; text-align: center; background: #faf7f2; border-radius: 0; min-width: 200px; min-height: 70px; position: relative; }
 .media-card.audio-card .media-overlay { background: rgba(255,255,255,0.45); flex-direction: column; gap: 8px; border-radius: 0; }
-.media-card.audio-card .media-overlay .play-icon { font-size: 40px; color: #5b4a3f; text-shadow: none; }
-.media-card.audio-card .media-overlay small { color: #888; font-size: 13px; }
+.media-card.audio-card .media-overlay .play-icon { font-size: 28px; color: #5b4a3f; text-shadow: none; }
+.media-card.audio-card .media-overlay small { color: #888; font-size: 11px; }
 .media-card.audio-card.playing .media-overlay { background: rgba(255,255,255,0.2); }
 .media-card.audio-card .media-author-badge { position: absolute; top: 8px; left: 8px; }
 
@@ -519,7 +519,7 @@ function renderItem(item) {
     if (item.subtype === 'local' && item.src) {
       el.innerHTML = '<div class="media-wrap"><video src="' + item.src + '" preload="metadata" playsinline></video><div class="media-overlay"><div class="media-author-badge" style="background:' + member.color + '">' + member.name + '</div><span class="play-icon">&#9654;</span></div></div><div class="media-timeline"><span class="tl-time tl-current">0:00</span><div class="tl-track"><div class="tl-progress" style="width:0%"></div><div class="tl-thumb" style="left:0%"></div></div><span class="tl-time tl-duration">0:00</span></div><div class="item-actions"><button class="item-delete-btn">&times;</button></div>';
     } else {
-      var embed = getVideoEmbed(item.url||item.src, 480, 270);
+      var embed = getVideoEmbed(item.url||item.src, 150, 85);
       if (embed) {
         el.innerHTML = '<div class="media-wrap">' + embed + '<div class="media-overlay"><div class="media-author-badge" style="background:' + member.color + '">' + member.name + '</div><span class="play-icon">&#9654;</span></div></div><div class="item-actions"><button class="item-delete-btn">&times;</button></div>';
       } else {
@@ -577,8 +577,8 @@ function renderItem(item) {
     var pt = e.touches ? e.touches[0] : e, dx = pt.clientX - sx, dy = pt.clientY - sy;
     if (!moved && (Math.abs(dx) > DRAG || Math.abs(dy) > DRAG)) moved = true;
     if (!moved) return;
-    item.x = Math.max(0, Math.min(board.clientWidth - el.offsetWidth, ox + dx));
-    item.y = Math.max(0, Math.min(board.clientHeight - el.offsetHeight, oy + dy));
+    item.x = ox + dx;
+    item.y = oy + dy;
     el.style.left = item.x + 'px'; el.style.top = item.y + 'px';
   }
 
@@ -606,7 +606,7 @@ function renderItem(item) {
   if (item.type === 'video' && item.subtype === 'local') {
     setTimeout(function() {
       var v = el.querySelector('video'); if (!v) return;
-      function sa() { if (v.videoWidth && v.videoHeight) { v.style.aspectRatio = v.videoWidth + '/' + v.videoHeight; v.style.width = 'auto'; v.style.maxWidth = '560px'; v.style.maxHeight = '400px'; } }
+      function sa() { if (v.videoWidth && v.videoHeight) { v.style.aspectRatio = v.videoWidth + '/' + v.videoHeight; v.style.width = 'auto'; v.style.maxWidth = '150px'; v.style.maxHeight = '100px'; } }
       if (v.videoWidth) sa(); else v.addEventListener('loadedmetadata', sa, {once:true});
     }, 0);
   }
