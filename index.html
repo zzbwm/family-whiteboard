@@ -48,9 +48,12 @@ body {
 .member-dot .member-label { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #888; white-space: nowrap; pointer-events: none; }
 
 #board {
-  position: relative; flex: 1;
+  position: relative; flex: 1; overflow: auto; cursor: default;
   background: #fdfaf6; background-image: radial-gradient(circle, #e8dcc8 1px, transparent 1px);
-  background-size: 28px 28px; overflow: visible; cursor: default;
+  background-size: 28px 28px;
+}
+#boardInner {
+  width: 2500px; height: 2500px; position: relative;
 }
 #board.drawing-mode { cursor: crosshair; }
 #board.drawing-mode .board-item { pointer-events: none; }
@@ -80,8 +83,8 @@ body {
 .board-item.selected { outline: 3px dashed #5b4a3f; outline-offset: 4px; }
 
 .text-note {
-  background: #fffaec; border: 1px solid #e8d5a3; padding: 8px 10px 18px;
-  min-width: 100px; max-width: 130px; font-size: 12px; line-height: 1.4; color: #3e3028;
+  background: #fffaec; border: 1px solid #e8d5a3; padding: 12px 14px 22px;
+  min-width: 180px; max-width: 260px; font-size: 15px; line-height: 1.5; color: #3e3028;
   white-space: pre-wrap; word-break: break-word;
 }
 .text-note .note-content { max-height: 180px; overflow: hidden; mask-image: linear-gradient(to bottom, black 60%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%); }
@@ -92,7 +95,7 @@ body {
 
 .image-card { background: #111; border: none; border-radius: 8px; overflow: hidden; }
 .image-card .img-wrap { position: relative; border-radius: 0; overflow: hidden; line-height: 0; }
-.image-card .img-wrap img { display: block; max-width: 130px; max-height: 130px; border-radius: 0; pointer-events: none; }
+.image-card .img-wrap img { display: block; max-width: 260px; max-height: 260px; border-radius: 0; pointer-events: none; }
 .image-card .img-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; transition: background 0.2s; border-radius: 0; }
 .image-card .img-overlay:hover { background: rgba(0,0,0,0.25); }
 .image-card .img-overlay .zoom-icon { color: #fff; font-size: 32px; opacity: 0; transition: opacity 0.2s; text-shadow: 0 2px 6px rgba(0,0,0,0.4); }
@@ -100,7 +103,7 @@ body {
 
 .media-card { background: #222; border: none; border-radius: 8px; overflow: hidden; }
 .media-card .media-wrap { position: relative; border-radius: 0; overflow: hidden; line-height: 0; }
-.media-card .media-wrap iframe, .media-card .media-wrap video { display: block; border: none; border-radius: 0; pointer-events: none; max-width: 150px; max-height: 100px; width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; }
+.media-card .media-wrap iframe, .media-card .media-wrap video { display: block; border: none; border-radius: 0; pointer-events: none; max-width: 300px; max-height: 200px; width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; }
 .media-card .media-wrap audio { display: block; width: 100%; min-width: 300px; pointer-events: none; }
 .media-card .media-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 0; z-index: 2; background: rgba(0,0,0,0.12); transition: background 0.2s; }
 .media-card .media-overlay:hover { background: rgba(0,0,0,0.32); }
@@ -120,7 +123,7 @@ body {
 .media-timeline .tl-track:hover .tl-thumb { opacity: 1; }
 
 .media-card.audio-card { background: #faf7f2; }
-.media-card.audio-card .media-wrap { padding: 16px 14px 10px; text-align: center; background: #faf7f2; border-radius: 0; min-width: 200px; min-height: 70px; position: relative; }
+.media-card.audio-card .media-wrap { padding: 20px 16px 12px; text-align: center; background: #faf7f2; border-radius: 0; min-width: 280px; min-height: 90px; position: relative; }
 .media-card.audio-card .media-overlay { background: rgba(255,255,255,0.45); flex-direction: column; gap: 8px; border-radius: 0; }
 .media-card.audio-card .media-overlay .play-icon { font-size: 28px; color: #5b4a3f; text-shadow: none; }
 .media-card.audio-card .media-overlay small { color: #888; font-size: 11px; }
@@ -227,7 +230,9 @@ body {
 
 <!-- Board -->
 <div id="board">
-  <canvas id="drawCanvas"></canvas>
+  <div id="boardInner">
+    <canvas id="drawCanvas"></canvas>
+</div>
   <div id="drawToolbar">
     <span style="font-size:12px;color:#666;">画笔:</span>
     <span id="colorSwatches"></span>
@@ -330,7 +335,7 @@ var items = [], drawings = [], zCounter = 10;
 var isDrawing = false, lastX = 0, lastY = 0;
 var initCalled = false;
 
-var board = document.getElementById('board'), canvas = document.getElementById('drawCanvas'), ctx = canvas.getContext('2d');
+var board = document.getElementById('board'), boardInner = document.getElementById('boardInner'), canvas = document.getElementById('drawCanvas'), ctx = canvas.getContext('2d');
 var hint = document.getElementById('hint');
 var loginScreen = document.getElementById('loginScreen');
 
@@ -450,9 +455,9 @@ function reloadBoard() {
     itemsRef.once('value').then(function(snap) { items = []; snap.forEach(function(c) { var it = c.val(); items.push(it); renderItem(it); }); }).catch(function() { loadBoardLocal(); });
   } else { loadBoardLocal(); }
 }
-function resizeCanvas() { canvas.width = board.clientWidth; canvas.height = board.clientHeight; redrawCanvas(); }
+function resizeCanvas() { canvas.width = boardInner.clientWidth; canvas.height = boardInner.clientHeight; redrawCanvas(); }
 function setSyncStatus(t) { document.getElementById('syncStatus').textContent = t; }
-function clearBoardDOM() { board.querySelectorAll('.board-item').forEach(function(el) { if (el._tlCleanup) el._tlCleanup(); if (el._cleanup) el._cleanup(); el.remove(); }); }
+function clearBoardDOM() { boardInner.querySelectorAll('.board-item').forEach(function(el) { if (el._tlCleanup) el._tlCleanup(); if (el._cleanup) el._cleanup(); el.remove(); }); }
 
 function buildMemberPicker() {
   var pick = document.getElementById('memberPick'); pick.innerHTML = '';
@@ -475,8 +480,8 @@ function toggleDrawMode() {
   document.getElementById('btnDraw').classList.toggle('active', drawingMode);
   if (!drawingMode) finishStroke();
 }
-function startStroke(e) { if (!drawingMode) return; isDrawing = true; var r = canvas.getBoundingClientRect(); lastX = e.clientX - r.left; lastY = e.clientY - r.top; }
-function continueStroke(e) { if (!isDrawing || !drawingMode) return; var r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; ctx.lineWidth = isErasing ? brushSize*3 : brushSize; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = isErasing ? '#fdfaf6' : drawColor; ctx.globalCompositeOperation = isErasing ? 'destination-out' : 'source-over'; ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke(); lastX = x; lastY = y; }
+function startStroke(e) { if (!drawingMode) return; isDrawing = true; var r = canvas.getBoundingClientRect(); lastX = e.clientX - r.left + board.scrollLeft; lastY = e.clientY - r.top + board.scrollTop; }
+function continueStroke(e) { if (!isDrawing || !drawingMode) return; var r = canvas.getBoundingClientRect(), x = e.clientX - r.left + board.scrollLeft, y = e.clientY - r.top + board.scrollTop; ctx.lineWidth = isErasing ? brushSize*3 : brushSize; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = isErasing ? '#fdfaf6' : drawColor; ctx.globalCompositeOperation = isErasing ? 'destination-out' : 'source-over'; ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke(); lastX = x; lastY = y; }
 function finishStroke() { if (isDrawing) { isDrawing = false; ctx.globalCompositeOperation = 'source-over'; saveDrawings(); } }
 function redrawCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawings.forEach(function(d) { var img = new Image(); img.onload = function() { ctx.drawImage(img, 0, 0); }; img.src = d; }); }
 
@@ -495,7 +500,7 @@ function buildColorSwatches() {
 
 // ═══ Board items ═══
 function createBoardItem(type, data) {
-  var item = { id: Date.now(), type: type, x: 100+Math.random()*250, y: 80+Math.random()*180, z: zCounter++, scale: 1 };
+  var item = { id: Date.now(), type: type, x: 60+Math.random()*500, y: 60+Math.random()*400, z: zCounter++, scale: 1 };
   for (var k in data) if (data.hasOwnProperty(k)) item[k] = data[k];
   items.push(item); renderItem(item); saveBoard(); return item;
 }
@@ -519,7 +524,7 @@ function renderItem(item) {
     if (item.subtype === 'local' && item.src) {
       el.innerHTML = '<div class="media-wrap"><video src="' + item.src + '" preload="metadata" playsinline></video><div class="media-overlay"><div class="media-author-badge" style="background:' + member.color + '">' + member.name + '</div><span class="play-icon">&#9654;</span></div></div><div class="media-timeline"><span class="tl-time tl-current">0:00</span><div class="tl-track"><div class="tl-progress" style="width:0%"></div><div class="tl-thumb" style="left:0%"></div></div><span class="tl-time tl-duration">0:00</span></div><div class="item-actions"><button class="item-delete-btn">&times;</button></div>';
     } else {
-      var embed = getVideoEmbed(item.url||item.src, 150, 85);
+      var embed = getVideoEmbed(item.url||item.src, 300, 169);
       if (embed) {
         el.innerHTML = '<div class="media-wrap">' + embed + '<div class="media-overlay"><div class="media-author-badge" style="background:' + member.color + '">' + member.name + '</div><span class="play-icon">&#9654;</span></div></div><div class="item-actions"><button class="item-delete-btn">&times;</button></div>';
       } else {
@@ -600,13 +605,13 @@ function renderItem(item) {
 
   var delBtn = el.querySelector('.item-delete-btn, .note-delete');
   if (delBtn) delBtn.onclick = function(ev) { ev.stopPropagation(); ev.preventDefault(); deleteItem(item.id); };
-  board.appendChild(el);
+  boardInner.appendChild(el);
 
   // Auto-adapt video aspect ratio
   if (item.type === 'video' && item.subtype === 'local') {
     setTimeout(function() {
       var v = el.querySelector('video'); if (!v) return;
-      function sa() { if (v.videoWidth && v.videoHeight) { v.style.aspectRatio = v.videoWidth + '/' + v.videoHeight; v.style.width = 'auto'; v.style.maxWidth = '150px'; v.style.maxHeight = '100px'; } }
+      function sa() { if (v.videoWidth && v.videoHeight) { v.style.aspectRatio = v.videoWidth + '/' + v.videoHeight; v.style.width = 'auto'; v.style.maxWidth = '300px'; v.style.maxHeight = '200px'; } }
       if (v.videoWidth) sa(); else v.addEventListener('loadedmetadata', sa, {once:true});
     }, 0);
   }
@@ -754,14 +759,14 @@ document.getElementById('brushSize').oninput=function() { brushSize=parseInt(thi
 
 // Clear
 document.getElementById('btnClear').onclick=function() {
-  if (confirm('确定要清空白板吗？')) { items.forEach(function(it) { var e=document.getElementById('item-'+it.id); if (e) { if (e._tlCleanup) e._tlCleanup(); if (e._cleanup) e._cleanup(); } deleteItemFromFirebase(it.id); }); items=[]; drawings=[]; board.querySelectorAll('.board-item').forEach(function(e) { e.remove(); }); ctx.clearRect(0,0,canvas.width,canvas.height); saveBoard(); if (firebaseReady&&itemsRef) itemsRef.remove().catch(function(){}); if (firebaseReady&&drawingsRef) drawingsRef.remove().catch(function(){}); toast('白板已清空'); }
+  if (confirm('确定要清空白板吗？')) { items.forEach(function(it) { var e=document.getElementById('item-'+it.id); if (e) { if (e._tlCleanup) e._tlCleanup(); if (e._cleanup) e._cleanup(); } deleteItemFromFirebase(it.id); }); items=[]; drawings=[]; boardInner.querySelectorAll('.board-item').forEach(function(e) { e.remove(); }); ctx.clearRect(0,0,canvas.width,canvas.height); saveBoard(); if (firebaseReady&&itemsRef) itemsRef.remove().catch(function(){}); if (firebaseReady&&drawingsRef) drawingsRef.remove().catch(function(){}); toast('白板已清空'); }
 };
 document.querySelectorAll('.modal-overlay').forEach(function(o) { o.onclick=function(e) { if (e.target===this) this.classList.remove('show'); }; });
 
 // Canvas
 canvas.addEventListener('mousedown', startStroke); canvas.addEventListener('mousemove', continueStroke); canvas.addEventListener('mouseup', finishStroke); canvas.addEventListener('mouseleave', finishStroke);
-canvas.addEventListener('touchstart', function(e) { if (!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(); lastX=e.touches[0].clientX-r.left; lastY=e.touches[0].clientY-r.top; isDrawing=true; }, {passive:false});
-canvas.addEventListener('touchmove', function(e) { if (!isDrawing||!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(), x=e.touches[0].clientX-r.left, y=e.touches[0].clientY-r.top; ctx.lineWidth=isErasing?brushSize*3:brushSize; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=isErasing?'#fdfaf6':drawColor; ctx.globalCompositeOperation=isErasing?'destination-out':'source-over'; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; }, {passive:false});
+canvas.addEventListener('touchstart', function(e) { if (!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(); lastX=e.touches[0].clientX-r.left + board.scrollLeft; lastY=e.touches[0].clientY-r.top + board.scrollTop; isDrawing=true; }, {passive:false});
+canvas.addEventListener('touchmove', function(e) { if (!isDrawing||!drawingMode) return; e.preventDefault(); var r=canvas.getBoundingClientRect(), x=e.touches[0].clientX-r.left + board.scrollLeft, y=e.touches[0].clientY-r.top + board.scrollTop; ctx.lineWidth=isErasing?brushSize*3:brushSize; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=isErasing?'#fdfaf6':drawColor; ctx.globalCompositeOperation=isErasing?'destination-out':'source-over'; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; }, {passive:false});
 canvas.addEventListener('touchend', finishStroke); canvas.addEventListener('touchcancel', finishStroke);
 
 function escapeHtml(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
