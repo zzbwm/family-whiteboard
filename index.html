@@ -592,7 +592,7 @@ function renderItem(item) {
       e.preventDefault();
       var dx = e.clientX - resizeSx, dy = e.clientY - resizeSy;
       var delta = Math.max(dx, dy);
-      var s = Math.max(0.3, Math.min(3.5, resizeScale0 + delta * 0.008));
+      var s = Math.max(0.3, Math.min(3.5, resizeScale0 + delta * 0.004));
       item.scale = s; el.style.transform = 'scale(' + s + ')';
       return;
     }
@@ -601,7 +601,8 @@ function renderItem(item) {
       if (!pinchActive) { active = false; pinchActive = true; pinchDist0 = td(e.touches[0], e.touches[1]); pinchScale0 = item.scale || 1; }
       e.preventDefault();
       var d = td(e.touches[0], e.touches[1]);
-      var s = Math.max(0.3, Math.min(3.5, pinchScale0 * (d / pinchDist0)));
+      var r2 = 1 + (d / pinchDist0 - 1) * 0.3;
+      var s = Math.max(0.3, Math.min(3.5, pinchScale0 * r2));
       item.scale = s; el.style.transform = 'scale(' + s + ')';
       return;
     }
@@ -836,7 +837,10 @@ board.addEventListener('touchmove', function(e) {
   if (e.touches.length < 2) { bPinch = false; return; }
   e.preventDefault();
   var d = bd(e.touches[0], e.touches[1]);
-  var z = Math.max(0.5, Math.min(3, bZoom0 * (d / bDist0)));
+  // Slow down zoom sensitivity (dampen to 25%)
+  var ratio = d / bDist0;
+  ratio = 1 + (ratio - 1) * 0.25;
+  var z = Math.max(0.5, Math.min(3, bZoom0 * ratio));
   var cx2 = (e.touches[0].clientX + e.touches[1].clientX) / 2;
   var cy2 = (e.touches[0].clientY + e.touches[1].clientY) / 2;
   // Keep pinch center stable
