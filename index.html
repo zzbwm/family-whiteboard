@@ -81,6 +81,19 @@ body {
 .board-item.dragging { cursor: grabbing; z-index: 50 !important; box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
 .board-item:hover { z-index: 20; box-shadow: 0 6px 24px rgba(0,0,0,0.18); }
 .board-item.selected { outline: 3px dashed #5b4a3f; outline-offset: 4px; }
+.board-item .resize-grip {
+  position: absolute; bottom: 0; right: 0;
+  width: 18px; height: 18px; cursor: nwse-resize;
+  z-index: 5; opacity: 0; transition: opacity 0.15s;
+  background: rgba(0,0,0,0.15); border-radius: 0 0 4px 0;
+}
+.board-item:hover .resize-grip,
+.board-item.selected .resize-grip { opacity: 1; }
+.resize-grip::after {
+  content: ''; position: absolute; right: 2px; bottom: 2px;
+  width: 8px; height: 8px;
+  border-right: 2px solid #888; border-bottom: 2px solid #888;
+}
 
 .text-note {
   background: #fffaec; border: 1px solid #e8d5a3; padding: 12px 14px 22px;
@@ -542,19 +555,30 @@ function renderItem(item) {
     }
   }
 
-  // Unified drag+click + pinch-to-zoom
+  // Unified drag+click + pinch-to-zoom + mouse resize
   var DRAG = 4, sx, sy, ox, oy, moved, active;
   var pinchDist0, pinchScale0, pinchActive;
+  var resizeActive, resizeSx, resizeSy, resizeScale0;
 
   function td(a, b) { var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY; return Math.sqrt(dx*dx + dy*dy); }
 
   function onDown(e) {
     if (drawingMode) return;
+    // Mouse resize via grip
+    if (e.target.closest('.resize-grip')) {
+      e.preventDefault(); e.stopPropagation();
+      resizeActive = true; active = false; pinchActive = false;
+      resizeSx = e.clientX; resizeSy = e.clientY; resizeScale0 = item.scale || 1;
+      document.querySelectorAll('.board-item.selected').forEach(function(s) { s.classList.remove('selected'); });
+      el.classList.add('selected'); el.classList.add('dragging');
+      item.z = zCounter++; el.style.zIndex = item.z;
+      return;
+    }
     if (e.target.closest('button, a')) return;
     e.preventDefault(); e.stopPropagation();
     var pt = e.touches ? e.touches[0] : e;
     sx = pt.clientX; sy = pt.clientY; ox = item.x; oy = item.y;
-    moved = false; active = true; pinchActive = false;
+    moved = false; active = true; pinchActive = false; resizeActive = false;
     document.querySelectorAll('.board-item.selected').forEach(function(s) { s.classList.remove('selected'); });
     el.classList.add('selected'); item.z = zCounter++; el.style.zIndex = item.z;
     el.classList.add('dragging');
@@ -562,32 +586,36 @@ function renderItem(item) {
 
   function onMove(e) {
     if (drawingMode) return;
-    // Detect second finger joining → switch to pinch
+    // Mouse resize
+    if (resizeActive) {
+      e.preventDefault();
+      var dx = e.clientX - resizeSx, dy = e.clientY - resizeSy;
+      var delta = Math.max(dx, dy);
+      var s = Math.max(0.3, Math.min(3.5, resizeScale0 + delta * 0.008));
+      item.scale = s; el.style.transform = 'scale(' + s + ')';
+      return;
+    }
+    // Pinch-to-zoom
     if (e.touches && e.touches.length >= 2) {
-      if (!pinchActive) {
-        // Switch from drag to pinch
-        active = false; pinchActive = true;
-        pinchDist0 = td(e.touches[0], e.touches[1]);
-        pinchScale0 = item.scale || 1;
-      }
+      if (!pinchActive) { active = false; pinchActive = true; pinchDist0 = td(e.touches[0], e.touches[1]); pinchScale0 = item.scale || 1; }
       e.preventDefault();
       var d = td(e.touches[0], e.touches[1]);
       var s = Math.max(0.3, Math.min(3.5, pinchScale0 * (d / pinchDist0)));
       item.scale = s; el.style.transform = 'scale(' + s + ')';
       return;
     }
-    // Single finger drag
+    // Drag
     if (!active) return;
     e.preventDefault();
-    var pt = e.touches ? e.touches[0] : e, dx = pt.clientX - sx, dy = pt.clientY - sy;
-    if (!moved && (Math.abs(dx) > DRAG || Math.abs(dy) > DRAG)) moved = true;
+    var pt = e.touches ? e.touches[0] : e, dx2 = pt.clientX - sx, dy2 = pt.clientY - sy;
+    if (!moved && (Math.abs(dx2) > DRAG || Math.abs(dy2) > DRAG)) moved = true;
     if (!moved) return;
-    item.x = ox + dx;
-    item.y = oy + dy;
+    item.x = ox + dx2; item.y = oy + dy2;
     el.style.left = item.x + 'px'; el.style.top = item.y + 'px';
   }
 
   function onUp(e) {
+    if (resizeActive) { resizeActive = false; el.classList.remove('dragging'); saveItemToFirebase(item); return; }
     if (pinchActive) { pinchActive = false; el.classList.remove('dragging'); saveItemToFirebase(item); return; }
     if (!active) return;
     active = false; el.classList.remove('dragging');
@@ -605,6 +633,9 @@ function renderItem(item) {
 
   var delBtn = el.querySelector('.item-delete-btn, .note-delete');
   if (delBtn) delBtn.onclick = function(ev) { ev.stopPropagation(); ev.preventDefault(); deleteItem(item.id); };
+  // Resize grip
+  var grip = document.createElement('div'); grip.className = 'resize-grip'; el.appendChild(grip);
+
   boardInner.appendChild(el);
 
   // Auto-adapt video aspect ratio
@@ -759,7 +790,20 @@ document.getElementById('brushSize').oninput=function() { brushSize=parseInt(thi
 
 // Clear
 document.getElementById('btnClear').onclick=function() {
-  if (confirm('确定要清空白板吗？')) { items.forEach(function(it) { var e=document.getElementById('item-'+it.id); if (e) { if (e._tlCleanup) e._tlCleanup(); if (e._cleanup) e._cleanup(); } deleteItemFromFirebase(it.id); }); items=[]; drawings=[]; boardInner.querySelectorAll('.board-item').forEach(function(e) { e.remove(); }); ctx.clearRect(0,0,canvas.width,canvas.height); saveBoard(); if (firebaseReady&&itemsRef) itemsRef.remove().catch(function(){}); if (firebaseReady&&drawingsRef) drawingsRef.remove().catch(function(){}); toast('白板已清空'); }
+  if (!confirm('确定要清空白板吗？')) return;
+  // Detach Firebase listeners temporarily
+  if (firebaseReady && itemsRef) { itemsRef.remove().catch(function(){}); }
+  if (firebaseReady && drawingsRef) { drawingsRef.remove().catch(function(){}); }
+  // Clear local state
+  items.forEach(function(it) {
+    var el = document.getElementById('item-' + it.id);
+    if (el) { if (el._tlCleanup) el._tlCleanup(); if (el._cleanup) el._cleanup(); el.remove(); }
+  });
+  items = [];
+  drawings = [];
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  saveBoard();
+  toast('白板已清空');
 };
 document.querySelectorAll('.modal-overlay').forEach(function(o) { o.onclick=function(e) { if (e.target===this) this.classList.remove('show'); }; });
 
