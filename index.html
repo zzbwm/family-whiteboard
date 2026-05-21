@@ -545,19 +545,7 @@ function renderItem(item) {
 
   function onDown(e) {
     if (drawingMode) return;
-    // Pinch with 2 fingers
-    if (e.touches && e.touches.length === 2) {
-      e.preventDefault(); e.stopPropagation();
-      active = false;
-      pinchActive = true;
-      pinchDist0 = td(e.touches[0], e.touches[1]);
-      pinchScale0 = item.scale || 1;
-      document.querySelectorAll('.board-item.selected').forEach(function(s) { s.classList.remove('selected'); });
-      el.classList.add('selected'); el.classList.add('dragging');
-      item.z = zCounter++; el.style.zIndex = item.z;
-      return;
-    }
-    if (e.target.closest('button, a, iframe, video, audio')) return;
+    if (e.target.closest('button, a')) return;
     e.preventDefault(); e.stopPropagation();
     var pt = e.touches ? e.touches[0] : e;
     sx = pt.clientX; sy = pt.clientY; ox = item.x; oy = item.y;
@@ -568,15 +556,23 @@ function renderItem(item) {
   }
 
   function onMove(e) {
-    if (pinchActive) {
-      if (!e.touches || e.touches.length < 2) return;
+    if (drawingMode) return;
+    // Detect second finger joining → switch to pinch
+    if (e.touches && e.touches.length >= 2) {
+      if (!pinchActive) {
+        // Switch from drag to pinch
+        active = false; pinchActive = true;
+        pinchDist0 = td(e.touches[0], e.touches[1]);
+        pinchScale0 = item.scale || 1;
+      }
       e.preventDefault();
       var d = td(e.touches[0], e.touches[1]);
       var s = Math.max(0.3, Math.min(3.5, pinchScale0 * (d / pinchDist0)));
       item.scale = s; el.style.transform = 'scale(' + s + ')';
       return;
     }
-    if (!active || drawingMode) return;
+    // Single finger drag
+    if (!active) return;
     e.preventDefault();
     var pt = e.touches ? e.touches[0] : e, dx = pt.clientX - sx, dy = pt.clientY - sy;
     if (!moved && (Math.abs(dx) > DRAG || Math.abs(dy) > DRAG)) moved = true;
