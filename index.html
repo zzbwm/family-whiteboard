@@ -119,12 +119,12 @@ body {
 .media-card .media-wrap { position: relative; border-radius: 0; overflow: hidden; line-height: 0; }
 .media-card .media-wrap iframe, .media-card .media-wrap video { display: block; border: none; border-radius: 0; pointer-events: none; max-width: 300px; max-height: 200px; width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; }
 .media-card .media-wrap audio { display: block; width: 100%; min-width: 300px; pointer-events: none; }
-.media-card .media-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 0; z-index: 2; background: rgba(0,0,0,0.12); transition: background 0.2s; }
-.media-card .media-overlay:hover { background: rgba(0,0,0,0.32); }
-.media-card .media-overlay .play-icon { color: #fff; font-size: 28px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); transition: transform 0.2s; opacity: 0.85; }
-.media-card .media-overlay:hover .play-icon { transform: scale(1.15); opacity: 1; }
-.media-card.playing .media-overlay { background: rgba(0,0,0,0.02); }
-.media-card.playing .media-overlay:hover { background: rgba(0,0,0,0.14); }
+.media-card .media-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; border-radius: 0; z-index: 2; background: rgba(0,0,0,0.06); transition: background 0.2s; }
+.media-card .media-overlay:hover { background: rgba(0,0,0,0.2); }
+.media-card .media-overlay .play-icon { color: #fff; font-size: 26px; text-shadow: 0 2px 6px rgba(0,0,0,0.5); transition: transform 0.2s; opacity: 0.5; }
+.media-card .media-overlay:hover .play-icon { transform: scale(1.15); opacity: 0.85; }
+.media-card.playing .media-overlay { background: transparent; }
+.media-card.playing .media-overlay:hover { background: rgba(0,0,0,0.08); }
 
 .media-author-badge { position: absolute; top: 4px; left: 4px; z-index: 3; padding: 3px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: 0 1px 4px rgba(0,0,0,0.3); pointer-events: none; }
 
@@ -138,10 +138,10 @@ body {
 
 .media-card.audio-card { background: #faf7f2; }
 .media-card.audio-card .media-wrap { padding: 20px 16px 12px; text-align: center; background: #faf7f2; border-radius: 0; min-width: 280px; min-height: 90px; position: relative; }
-.media-card.audio-card .media-overlay { background: rgba(255,255,255,0.45); flex-direction: column; gap: 8px; border-radius: 0; }
-.media-card.audio-card .media-overlay .play-icon { font-size: 28px; color: #5b4a3f; text-shadow: none; }
+.media-card.audio-card .media-overlay { background: rgba(255,255,255,0.35); flex-direction: column; align-items: center; justify-content: center; padding-bottom: 0; gap: 8px; border-radius: 0; }
+.media-card.audio-card .media-overlay .play-icon { font-size: 28px; color: #5b4a3f; text-shadow: none; opacity: 0.5; }
 .media-card.audio-card .media-overlay small { color: #888; font-size: 11px; }
-.media-card.audio-card.playing .media-overlay { background: rgba(255,255,255,0.2); }
+.media-card.audio-card.playing .media-overlay { background: transparent; }
 .media-card.audio-card .media-author-badge { position: absolute; top: 8px; left: 8px; }
 
 .item-actions { display: flex; justify-content: flex-end; align-items: center; padding: 2px 6px 1px; background: #fafafa; }
@@ -460,7 +460,13 @@ function init() {
       if (items.length > 0) zCounter = Math.max.apply(null, items.map(function(i) { return i.z || 0; }).concat([10])) + 1;
       startFirebaseListeners();
       setSyncStatus('已同步');
-    }).catch(function() { loadBoardLocal(); setSyncStatus('本地模式(离线)'); });
+    }).catch(function(err) {
+      var msg = '本地模式';
+      if (err && err.code === 'PERMISSION_DENIED') msg = '权限不足';
+      else if (err && err.message) msg = '离线';
+      setSyncStatus(msg);
+      loadBoardLocal();
+    });
   } catch(e) { loadBoardLocal(); setSyncStatus('本地模式'); }
 }
 function reloadBoard() {
